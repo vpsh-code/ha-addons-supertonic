@@ -1,10 +1,11 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12
-FROM ${BUILD_FROM}
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system deps
-RUN apk add --no-cache curl bash
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl jq \
+    && rm -rf /var/lib/apt/lists/*
 
 # Python deps
 COPY requirements.txt .
