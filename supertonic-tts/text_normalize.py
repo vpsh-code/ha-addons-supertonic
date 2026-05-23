@@ -34,7 +34,7 @@ _ORDINALS = {
 _ROMAN_RE = re.compile(
     r'(?<=[A-Za-z][ ])'           # preceded by a word then space (name context)
     r'\b(M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))\b'
-    r'(?=[ ,\.]|$)',               # followed by space, punctuation, or end
+    r'(?=\W|$)',                   # followed by any non-word char or end of string
     re.UNICODE,
 )
 

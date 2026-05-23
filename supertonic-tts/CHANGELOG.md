@@ -1,7 +1,10 @@
 # Changelog
 
+## 1.0.10
+- Fix Roman numeral regex — now correctly handles sentences ending in `!`, `?`, `:`, `;` (previously only matched before space or period)
+
 ## 1.0.9
-- Fix Roman numeral pronunciation: "Charles XI" → "Charles the Eleventh", "Gustav II Adolf" → "Gustav the Second Adolf"
+- Add Roman numeral expansion in text normalization — ordinals like `II`, `XI`, `XIV` are now spoken correctly in name/title context (e.g. "King Henry VIII" → "King Henry the Eighth")
 
 ## 1.0.8
 - Fix streaming protocol: send `SynthesizeStopped` (not `AudioStop`) to terminate HA's audio reader
