@@ -1,6 +1,6 @@
 name: "Supertonic TTS"
 description: "On-device neural TTS (31 languages) via Wyoming protocol. Powered by Supertonic 3 ONNX models."
-version: "1.0.4"
+version: "1.0.5"
 slug: "supertonic_tts"
 init: false
 startup: "services"
@@ -25,9 +25,9 @@ options:
   speed: 1.05
 
 schema:
-  voice: list(M1|M2|M3|M4|M5|F1|F2|F3|F4|F5)
-  language: list(en|ko|ja|ar|bg|cs|da|de|el|es|et|fi|fr|hi|hr|hu|id|it|lt|lv|nl|pl|pt|ro|ru|sk|sl|sv|tr|uk|vi)
-  quality: int(1,20)
-  speed: float(0.5,2.0)
+  voice: str
+  language: str
+  quality: int
+  speed: float
 
 url: "https://github.com/vpsh-code/ha-addons-supertonic"
