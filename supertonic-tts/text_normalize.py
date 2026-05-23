@@ -138,8 +138,9 @@ def normalize(text: str) -> str:
     t = re.sub(r'(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*%', r'\1 to \2 percent', t)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*%', r'\1 percent', t)
 
-    # 15. Decimal comma — Swedish locale (1,5 → 1 point 5); run after thousands separator
-    t = re.sub(r'\b(\d+),(\d+)\b', r'\1 point \2', t)
+    # 15. Decimal comma — Swedish locale (1,5 → 1.5); run after thousands separator
+    #     Convert to dot-decimal so the TTS model reads it natively (no "point" pause)
+    t = re.sub(r'\b(\d+),(\d+)\b', r'\1.\2', t)
 
     # 16. Fractions (UV index, scores)
     t = re.sub(r'\b(\d+)/(\d{1,2})\b', r'\1 out of \2', t)
@@ -155,8 +156,9 @@ def normalize(text: str) -> str:
     # 18. Roman numerals — name-prefixed only (Charles XII, Pope John Paul II, etc.)
     t = _ROMAN_RE.sub(_expand_roman, t)
 
-    # 19. Decimal numbers → spoken form (23.1 → 23 point 1)
-    t = re.sub(r'(\d+)\.(\d+)', r'\1 point \2', t)
+    # 19. Decimal numbers — let the TTS model read them natively (20.1, 12.5, etc.)
+    #     Do NOT expand to "point" — Supertonic's prosody model handles decimals correctly
+    #     and the "point" word introduces an audible pause in the output.
 
     # 20. Collapse extra spaces
     t = re.sub(r'  +', ' ', t)

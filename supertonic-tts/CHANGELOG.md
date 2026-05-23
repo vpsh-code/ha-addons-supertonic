@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.14
+- Fix decimal pronunciation: remove spoken "point" expansion — TTS model reads 20.1 natively without pause; Swedish decimal comma now converts to dot (1,5 → 1.5)
+
 ## 1.0.13
 - Extend text normalization: HA energy units (kWh, W, V, A), air quality (CO2, PM2.5, ppm), distance (mm, cm, km), currency (euro, dollar, pound, SEK, kr)
 - Add ISO date expansion (2026-06-07 to 7 June 2026) and time normalization (18:05 to 18 05)
