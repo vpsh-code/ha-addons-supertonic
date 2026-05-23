@@ -1,6 +1,6 @@
 name: "Supertonic TTS"
 description: "On-device neural TTS (31 languages) via Wyoming protocol. Powered by Supertonic 3 ONNX models."
-version: "1.0.12"
+version: "1.0.13"
 slug: "supertonic_tts"
 init: false
 startup: "services"

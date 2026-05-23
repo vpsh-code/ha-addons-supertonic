@@ -6,18 +6,14 @@ Mirrors the same logic in the browser main.js.
 import re
 
 
-# ── Roman numeral expansion ────────────────────────────────────────────────────
-
-_ROMAN_MAP = [
-    (1000, 'M'), (900, 'CM'), (800, 'DCCC'), (700, 'DCC'), (600, 'DC'),
-    (500, 'D'),  (400, 'CD'), (300, 'CCC'),  (200, 'CC'),  (100, 'C'),
-    (90,  'XC'), (80,  'LXXX'),(70, 'LXX'), (60,  'LX'),  (50,  'L'),
-    (40,  'XL'), (30,  'XXX'), (20, 'XX'),  (19,  'XIX'),  (18,  'XVIII'),
-    (17,  'XVII'),(16, 'XVI'), (15, 'XV'),  (14,  'XIV'),  (13,  'XIII'),
-    (12,  'XII'), (11, 'XI'),  (10, 'X'),   (9,   'IX'),   (8,   'VIII'),
-    (7,   'VII'), (6,  'VI'),  (5,  'V'),   (4,   'IV'),   (3,   'III'),
-    (2,   'II'),  (1,  'I'),
+# ── Month names for date expansion ────────────────────────────────────────────
+_MONTHS = [
+    '', 'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
 ]
+
+
+# ── Roman numeral expansion ────────────────────────────────────────────────────
 
 _ORDINALS = {
     1: 'the First',    2: 'the Second',   3: 'the Third',    4: 'the Fourth',
@@ -30,11 +26,16 @@ _ORDINALS = {
     25: 'the Twenty-fifth',
 }
 
-# Valid Roman numeral pattern (I–XXV covers all monarchs/popes in practice)
+# Only expand after known title/name prefixes — prevents "World War the Second",
+# "Model the Tenth", "Section the Fourth", etc.
 _ROMAN_RE = re.compile(
-    r'(?<=[A-Za-z][ ])'           # preceded by a word then space (name context)
-    r'\b(M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))\b'
-    r'(?=\W|$)',                   # followed by any non-word char or end of string
+    r'\b((?:King|Queen|Emperor|Empress|Prince|Princess|Pope|Cardinal|'
+    r'Charles|Henry|Louis|Elizabeth|James|George|Edward|Richard|William|'
+    r'John|Paul|Francis|Benedict|Clement|Pius|Gregory|Leo|'
+    r'Gustav|Carl|Philip|Frederick|Margaret|Catherine|Peter|Ivan|'
+    r'Napoleon)\s+)'
+    r'(M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))\b'
+    r'(?=\W|$)',
     re.UNICODE,
 )
 
@@ -50,63 +51,113 @@ def _roman_to_int(s: str) -> int:
 
 
 def _expand_roman(m: re.Match) -> str:
-    s = m.group(1)
-    if not s:
+    prefix, numeral = m.group(1), m.group(2)
+    if not numeral:
         return m.group(0)
-    val = _roman_to_int(s)
-    return _ORDINALS.get(val, m.group(0))
+    val = _roman_to_int(numeral)
+    return prefix + _ORDINALS.get(val, numeral)
 
 
 def normalize(text: str) -> str:
     t = text
 
-    # Normalize all Unicode whitespace variants (non-breaking space, thin space, etc.)
-    # to plain ASCII spaces so all subsequent regexes work correctly.
-    t = re.sub(r'[^\S\n]+', ' ', t)  # collapse any non-newline whitespace to single space
+    # 1. Normalize Unicode whitespace (non-breaking space, thin space, etc.)
+    t = re.sub(r'[^\S\n]+', ' ', t)
 
-    # Temperature ranges before singles
+    # 2. Normalize dash variants
+    t = t.replace('\u2212', '-')   # mathematical minus → hyphen
+    t = t.replace('\u2014', '\u2013')  # em dash → en dash (used in ranges)
+
+    # 3. Thousands separators (1,234 → 1234) — must run before decimal comma
+    t = re.sub(r'\b(\d{1,3}),(\d{3})\b', r'\1\2', t)
+
+    # 4. ISO dates (2026-06-07 → 7 June 2026)
+    def _expand_date(m: re.Match) -> str:
+        y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if 1 <= mo <= 12:
+            return f"{d} {_MONTHS[mo]} {y}"
+        return m.group(0)
+    t = re.sub(r'\b(\d{4})-(\d{2})-(\d{2})\b', _expand_date, t)
+
+    # 5. Time (7:30 AM → 7 30 AM  |  18:05 → 18 05)
+    t = re.sub(r'\b(\d{1,2}):([0-5]\d)\s*([AaPp][Mm])\b', r'\1 \2 \3', t)
+    t = re.sub(r'\b([01]?\d|2[0-3]):([0-5]\d)\b', r'\1 \2', t)
+
+    # 6. Temperature ranges before singles
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)\s*°F', r'\1 to \2 degree Fahrenheit', t)
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)\s*°C', r'\1 to \2 degree Celsius', t)
-    # Single temperatures
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*°F', r'\1 degree Fahrenheit', t)
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*°C', r'\1 degree Celsius', t)
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*°K', r'\1 degree Kelvin', t)
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*°',  r'\1 degree', t)
 
-    # Speed ranges
+    # 7. Speed — km/h before plain km (order matters)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*mph', r'\1 to \2 miles per hour', t, flags=re.I)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*kph', r'\1 to \2 kilometers per hour', t, flags=re.I)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*km/h', r'\1 to \2 kilometers per hour', t, flags=re.I)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*mph\b',   r'\1 miles per hour', t, flags=re.I)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*kph\b',   r'\1 kilometers per hour', t, flags=re.I)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*km/h\b',  r'\1 kilometers per hour', t, flags=re.I)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*m/s\b',   r'\1 meters per second', t)
 
-    # Pressure
+    # 8. Pressure
     t = re.sub(r'(\d+(?:\.\d+)?)\s*inHg\b',  r'\1 inches of mercury', t, flags=re.I)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*hPa\b',   r'\1 hectopascals', t, flags=re.I)
-    t = re.sub(r'\((\d+(?:\.\d+)?)\s*mb\)',   r'(\1 millibars)', t, flags=re.I)
-    t = re.sub(r'(\d+(?:\.\d+)?)\s*mb\b',    r'\1 millibars', t, flags=re.I)
-    t = re.sub(r'(\d+(?:\.\d+)?)\s*mbar\b',  r'\1 millibars', t, flags=re.I)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*mbar?\b',  r'\1 millibars', t, flags=re.I)
 
-    # Percentage
+    # 9. Energy / power — kWh before Wh, Wh before W, kW before W
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*kWh\b', r'\1 kilowatt hours', t, flags=re.I)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*Wh\b',  r'\1 watt hours', t)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*kW\b',  r'\1 kilowatts', t)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*W\b',   r'\1 watts', t)
+
+    # 10. Electrical
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*V\b', r'\1 volts', t)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*A\b', r'\1 amps', t)
+
+    # 11. Air quality
+    t = re.sub(r'\bCO2\b',   'carbon dioxide', t, flags=re.I)
+    t = re.sub(r'\bPM2\.5\b', 'P M two point five', t, flags=re.I)
+    t = re.sub(r'\bPM10\b',   'P M ten', t, flags=re.I)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*ppm\b', r'\1 parts per million', t, flags=re.I)
+
+    # 12. Distance / precipitation — ranges before singles, km/h already handled above
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*mm\b', r'\1 to \2 millimeters', t, flags=re.I)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*mm\b', r'\1 millimeters', t, flags=re.I)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*cm\b', r'\1 centimeters', t, flags=re.I)
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*km\b', r'\1 kilometers', t, flags=re.I)
+
+    # 13. Currency
+    t = re.sub(r'€\s*(\d+(?:\.\d+)?)',  r'\1 euros', t)
+    t = re.sub(r'\$\s*(\d+(?:\.\d+)?)', r'\1 dollars', t)
+    t = re.sub(r'£\s*(\d+(?:\.\d+)?)',  r'\1 pounds', t)
+    t = re.sub(r'(\d+(?:[.,]\d+)?)\s*SEK\b', r'\1 Swedish kronor', t, flags=re.I)
+    t = re.sub(r'(\d+(?:[.,]\d+)?)\s*kr\b',  r'\1 kronor', t, flags=re.I)
+
+    # 14. Percentage range before single
+    t = re.sub(r'(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*%', r'\1 to \2 percent', t)
     t = re.sub(r'(\d+(?:\.\d+)?)\s*%', r'\1 percent', t)
 
-    # Fractions (UV index, scores)
+    # 15. Decimal comma — Swedish locale (1,5 → 1 point 5); run after thousands separator
+    t = re.sub(r'\b(\d+),(\d+)\b', r'\1 point \2', t)
+
+    # 16. Fractions (UV index, scores)
     t = re.sub(r'\b(\d+)/(\d{1,2})\b', r'\1 out of \2', t)
 
-    # Compass directions
-    for abbr, full in [('NNW','north-northwest'),('NNE','north-northeast'),
-                       ('SSW','south-southwest'),('SSE','south-southeast'),
-                       ('NW','northwest'),('NE','northeast'),
-                       ('SW','southwest'),('SE','southeast')]:
-        t = re.sub(rf'\b{abbr}\b', full, t)
+    # 17. Compass directions — multi-letter only with case-insensitivity
+    #     Single-letter (N/S/E/W) omitted — too many false positives
+    for abbr, full in [('NNW', 'north-northwest'), ('NNE', 'north-northeast'),
+                       ('SSW', 'south-southwest'), ('SSE', 'south-southeast'),
+                       ('NW', 'northwest'), ('NE', 'northeast'),
+                       ('SW', 'southwest'), ('SE', 'southeast')]:
+        t = re.sub(rf'\b{abbr}\b', full, t, flags=re.I)
 
-    # Roman numerals in name context (Charles XI → Charles the Eleventh)
+    # 18. Roman numerals — name-prefixed only (Charles XII, Pope John Paul II, etc.)
     t = _ROMAN_RE.sub(_expand_roman, t)
 
-    # Decimal numbers → spoken form  (23.1 → 23 point 1)
+    # 19. Decimal numbers → spoken form (23.1 → 23 point 1)
     t = re.sub(r'(\d+)\.(\d+)', r'\1 point \2', t)
 
-    # Collapse extra spaces
+    # 20. Collapse extra spaces
     t = re.sub(r'  +', ' ', t)
     return t.strip()
