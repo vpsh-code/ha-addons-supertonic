@@ -3,6 +3,8 @@ description: "On-device neural TTS (31 languages) via Wyoming protocol. Powered 
 version: "1.0.0"
 slug: "supertonic_tts"
 init: false
+startup: "services"
+boot: "auto"
 homeassistant_api: false
 auth_api: false
 ingress: false
