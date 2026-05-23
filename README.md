@@ -1,9 +1,12 @@
 # Supertonic TTS — Home Assistant Add-on
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Wyoming Streaming](https://img.shields.io/badge/Wyoming-Streaming%20TTS-brightgreen)](https://www.home-assistant.io/integrations/wyoming/)
+[![Version](https://img.shields.io/badge/version-1.0.8-blue)](https://github.com/vpsh-code/ha-addons-supertonic/blob/main/supertonic-tts/CHANGELOG.md)
 
 On-device neural Text-to-Speech for Home Assistant via the [Wyoming protocol](https://www.home-assistant.io/integrations/wyoming/), powered by [Supertonic 3](https://github.com/supertone-inc/supertonic) from Supertone Inc.
 
+- **🔴 Streaming TTS** — audio starts playing sentence-by-sentence as synthesis happens, no waiting for the full response (`stream_response: true`)
 - **31 languages** — English, Korean, Japanese, German, French, Spanish, and 25 more
 - **10 voices** — M1–M5 (male), F1–F5 (female)
 - **100% on-device** — no cloud, no API key, no data leaves your home
