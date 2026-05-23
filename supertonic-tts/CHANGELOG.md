@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.11
+- Fix Roman numeral expansion failing when LLM uses Unicode whitespace (non-breaking space, thin space) between name and numeral
+
 ## 1.0.10
 - Fix Roman numeral regex — now correctly handles sentences ending in `!`, `?`, `:`, `;` (previously only matched before space or period)
 

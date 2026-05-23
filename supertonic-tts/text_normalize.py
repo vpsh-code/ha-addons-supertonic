@@ -60,6 +60,10 @@ def _expand_roman(m: re.Match) -> str:
 def normalize(text: str) -> str:
     t = text
 
+    # Normalize all Unicode whitespace variants (non-breaking space, thin space, etc.)
+    # to plain ASCII spaces so all subsequent regexes work correctly.
+    t = re.sub(r'[^\S\n]+', ' ', t)  # collapse any non-newline whitespace to single space
+
     # Temperature ranges before singles
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)\s*°F', r'\1 to \2 degree Fahrenheit', t)
     t = re.sub(r'(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)\s*°C', r'\1 to \2 degree Celsius', t)
