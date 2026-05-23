@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.15
+- Add Indian Rupee symbol (₹) expansion: handles crore and lakh suffixes (₹6 crore → 6 crore rupees)
+
 ## 1.0.14
 - Fix decimal pronunciation: remove spoken "point" expansion — TTS model reads 20.1 natively without pause; Swedish decimal comma now converts to dot (1,5 → 1.5)
 
