@@ -160,9 +160,11 @@ def normalize(text: str) -> str:
     # 18. Roman numerals — name-prefixed only (Charles XII, Pope John Paul II, etc.)
     t = _ROMAN_RE.sub(_expand_roman, t)
 
-    # 19. Decimal numbers — let the TTS model read them natively (20.1, 12.5, etc.)
-    #     Do NOT expand to "point" — Supertonic's prosody model handles decimals correctly
-    #     and the "point" word introduces an audible pause in the output.
+    # 19. Decimal numbers — expand to prevent TTS treating '.' as a sentence boundary.
+    #     Digits after the decimal are spoken individually: 9.97 → "9 point 9 7"
+    #     (not "9 point 97" which would become "ninety-seven" and sound wrong)
+    t = re.sub(r'(\d+)\.(\d+)',
+               lambda m: m.group(1) + ' point ' + ' '.join(m.group(2)), t)
 
     # 20. Collapse extra spaces
     t = re.sub(r'  +', ' ', t)

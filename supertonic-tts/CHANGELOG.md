@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.17
+- Fix decimal pronunciation: expand digits individually after decimal point (9.97 → "9 point 9 7") to prevent TTS treating the dot as a sentence boundary
+
 ## 1.0.16
 - Fix rupee singular: ₹1 → 1 rupee (not "1 rupees")
 
