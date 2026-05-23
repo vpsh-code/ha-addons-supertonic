@@ -101,7 +101,11 @@ class SupertonicHandler(AsyncEventHandler):
             return True
 
         # ── Synthesize → generate + stream audio ─────────────────────────────
+        # HA also sends a full Synthesize event for backward compat during streaming.
+        # Ignore it if a streaming session is active (chunks already handled).
         if Synthesize.is_type(event.type):
+            if self._stream_voice is not None:
+                return True  # streaming session active — ignore legacy event
             synth = Synthesize.from_event(event)
             await self._synthesize(synth)
             return True
@@ -127,7 +131,9 @@ class SupertonicHandler(AsyncEventHandler):
         if SynthesizeStop.is_type(event.type):
             await self._stream_flush(force=True)
             if self._audio_started:
-                await self.write_event(AudioStop().event())
+                # In streaming mode HA reads until SynthesizeStopped, NOT AudioStop.
+                # Do NOT send AudioStop here — it is not expected and can stall the reader.
+                pass
             await self.write_event(SynthesizeStopped().event())
             self._stream_voice  = None
             self._text_buf      = []

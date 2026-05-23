@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.8
+- Fix streaming protocol: send `SynthesizeStopped` (not `AudioStop`) to terminate HA's audio reader
+- Ignore legacy `Synthesize` event when streaming session is active
+
 ## 1.0.7
 - Enable Wyoming streaming TTS (`supports_synthesize_streaming=True`) — audio starts playing before the full response is generated
 - Add `SynthesizeStart` / `SynthesizeChunk` / `SynthesizeStop` handlers for sentence-level streaming
