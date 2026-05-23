@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.13
+- Extend text normalization: HA energy units (kWh, W, V, A), air quality (CO2, PM2.5, ppm), distance (mm, cm, km), currency (euro, dollar, pound, SEK, kr)
+- Add ISO date expansion (2026-06-07 to 7 June 2026) and time normalization (18:05 to 18 05)
+- Add Swedish decimal comma (1,5 to 1 point 5) and thousands separator (1,234 to 1234)
+- Fix Roman numeral expansion to only fire after known name or title prefixes
+- Add compass direction case-insensitivity for multi-letter abbreviations
+- Normalize mathematical minus and em dash to ASCII equivalents
+
 ## 1.0.12
 - Fix streaming language handling — language from SynthesizeStart now used (was always defaulting to English)
 - Fix run.sh quality fallback (8→2) to match config.yaml default
