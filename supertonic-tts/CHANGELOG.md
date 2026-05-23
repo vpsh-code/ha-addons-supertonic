@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.9
+- Fix Roman numeral pronunciation: "Charles XI" → "Charles the Eleventh", "Gustav II Adolf" → "Gustav the Second Adolf"
+
 ## 1.0.8
 - Fix streaming protocol: send `SynthesizeStopped` (not `AudioStop`) to terminate HA's audio reader
 - Ignore legacy `Synthesize` event when streaming session is active
