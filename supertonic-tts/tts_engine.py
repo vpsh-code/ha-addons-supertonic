@@ -96,6 +96,9 @@ class SupertonicTTS:
     def __init__(self, onnx_dir: str):
         opts = ort.SessionOptions()
         opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        opts.enable_mem_pattern = False       # reduces peak memory
+        opts.enable_mem_reuse   = True        # reuse buffers between runs
+        opts.intra_op_num_threads = 2         # limit CPU threads → less RAM overhead
         providers = ["CPUExecutionProvider"]
 
         base = Path(onnx_dir)
