@@ -19,7 +19,7 @@ if [ ! -f "${MODEL_DIR}/vocoder.onnx" ]; then
 
     for f in duration_predictor.onnx text_encoder.onnx vector_estimator.onnx vocoder.onnx tts.json unicode_indexer.json; do
         echo "[supertonic]   ↓ ${f}"
-        curl -fsSL "${BASE_URL}/${f}" -o "${MODEL_DIR}/${f}"
+        curl -fsSL "${BASE_URL}/onnx/${f}" -o "${MODEL_DIR}/${f}"
     done
 
     for v in M1 M2 M3 M4 M5 F1 F2 F3 F4 F5; do
