@@ -81,7 +81,7 @@ class SupertonicHandler(AsyncEventHandler):
             ]
             info = Info(
                 tts=[TtsProgram(
-                    name="supertonic",
+                    name="Supertonic TTS",
                     description="Supertonic 3 — On-device Neural TTS (31 languages)",
                     version="3.0",
                     attribution=Attribution(
