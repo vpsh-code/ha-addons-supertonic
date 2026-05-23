@@ -21,7 +21,7 @@ from wyoming.audio import AudioChunk, AudioStart, AudioStop
 from wyoming.event import Event
 from wyoming.info import Attribution, Info, TtsProgram, TtsVoice
 from wyoming.server import AsyncServer, AsyncEventHandler
-from wyoming.tts import Synthesize
+from wyoming.tts import Synthesize, SynthesizeStart, SynthesizeChunk, SynthesizeStop, SynthesizeStopped
 
 from tts_engine import AVAILABLE_LANGS, SupertonicTTS, Style, load_voice_style
 from text_normalize import normalize
@@ -52,6 +52,10 @@ class SupertonicHandler(AsyncEventHandler):
         self.total_step    = total_step
         self.speed         = speed
         self._style_cache  = style_cache   # shared across connections
+        # streaming state
+        self._stream_voice: Optional[str] = None
+        self._text_buf: list              = []
+        self._audio_started: bool         = False
 
     def _get_style(self, voice_id: str) -> Style:
         if voice_id not in self._style_cache:
@@ -90,6 +94,7 @@ class SupertonicHandler(AsyncEventHandler):
                     ),
                     installed=True,
                     voices=voices,
+                    supports_synthesize_streaming=True,
                 )]
             )
             await self.write_event(info.event())
@@ -101,7 +106,69 @@ class SupertonicHandler(AsyncEventHandler):
             await self._synthesize(synth)
             return True
 
+        # ── Streaming path: SynthesizeStart / Chunk / Stop ───────────────────
+        if SynthesizeStart.is_type(event.type):
+            start = SynthesizeStart.from_event(event)
+            self._stream_voice = (
+                start.voice.name if (start.voice and start.voice.name) else self.default_voice
+            )
+            self._text_buf     = []
+            self._audio_started = False
+            # acknowledge
+            await self.write_event(SynthesizeStart(voice=start.voice).event())
+            return True
+
+        if SynthesizeChunk.is_type(event.type):
+            chunk = SynthesizeChunk.from_event(event)
+            self._text_buf.append(chunk.text)
+            await self._stream_flush(force=False)
+            return True
+
+        if SynthesizeStop.is_type(event.type):
+            await self._stream_flush(force=True)
+            if self._audio_started:
+                await self.write_event(AudioStop().event())
+            await self.write_event(SynthesizeStopped().event())
+            self._stream_voice  = None
+            self._text_buf      = []
+            self._audio_started = False
+            return True
+
         return True
+
+    async def _stream_flush(self, force: bool):
+        """Synthesize buffered text when a sentence boundary is reached (or forced)."""
+        text = "".join(self._text_buf).strip()
+        if not text:
+            return
+        # Flush at sentence boundaries or when forced
+        ready = force or text[-1] in {".", "!", "?", "\n"} or len(text) >= 250
+        if not ready:
+            return
+        self._text_buf = []
+
+        voice_name = self._stream_voice or self.default_voice
+        style  = self._get_style(voice_name)
+        loop   = asyncio.get_event_loop()
+        sr     = self.tts.sample_rate
+
+        normalized = normalize(text)
+        _LOGGER.info("Stream chunk | voice=%s | %r", voice_name, normalized[:60])
+
+        wav = await loop.run_in_executor(
+            None,
+            lambda: self.tts._infer(normalized, self.default_lang, style, self.total_step, self.speed)[0]
+        )
+
+        if not self._audio_started:
+            await self.write_event(AudioStart(rate=sr, width=2, channels=1).event())
+            self._audio_started = True
+
+        pcm = SupertonicTTS.to_int16(wav)
+        for i in range(0, len(pcm), CHUNK_BYTES):
+            await self.write_event(
+                AudioChunk(rate=sr, width=2, channels=1, audio=pcm[i:i+CHUNK_BYTES]).event()
+            )
 
     async def _synthesize(self, synth: Synthesize):
         text = normalize(synth.text)
