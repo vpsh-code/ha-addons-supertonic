@@ -1,0 +1,31 @@
+name: "Supertonic TTS"
+description: "On-device neural TTS (31 languages) via Wyoming protocol. Powered by Supertonic 3 ONNX models."
+version: "1.0.0"
+slug: "supertonic_tts"
+init: false
+homeassistant_api: false
+auth_api: false
+ingress: false
+
+arch:
+  - aarch64
+  - amd64
+
+ports:
+  10200/tcp: 10200
+ports_description:
+  10200/tcp: "Wyoming TTS protocol"
+
+options:
+  voice: "F1"
+  language: "en"
+  quality: 8
+  speed: 1.05
+
+schema:
+  voice: list(M1|M2|M3|M4|M5|F1|F2|F3|F4|F5)
+  language: list(en|ko|ja|ar|bg|cs|da|de|el|es|et|fi|fr|hi|hr|hu|id|it|lt|lv|nl|pl|pt|ro|ru|sk|sl|sv|tr|uk|vi)
+  quality: int(1,20)
+  speed: float(0.5,2.0)
+
+url: "https://github.com/vpsh-code/ha-addons-supertonic"
