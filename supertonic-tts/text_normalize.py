@@ -133,7 +133,8 @@ def normalize(text: str) -> str:
     t = re.sub(r'£\s*(\d+(?:\.\d+)?)',  r'\1 pounds', t)
     # Rupee — handle crore/lakh suffix (₹6 crore → 6 crore rupees)
     t = re.sub(r'₹\s*(\d+(?:\.\d+)?)\s*(crore|lakh|lacs?)\b', r'\1 \2 rupees', t, flags=re.I)
-    t = re.sub(r'₹\s*(\d+(?:\.\d+)?)', r'\1 rupees', t)
+    t = re.sub(r'₹\s*(\d+(?:\.\d+)?)',
+               lambda m: f"{m.group(1)} {'rupee' if m.group(1) == '1' else 'rupees'}", t)
     t = re.sub(r'(\d+(?:[.,]\d+)?)\s*SEK\b', r'\1 Swedish kronor', t, flags=re.I)
     t = re.sub(r'(\d+(?:[.,]\d+)?)\s*kr\b',  r'\1 kronor', t, flags=re.I)
 

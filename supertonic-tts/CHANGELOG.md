@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.16
+- Fix rupee singular: ₹1 → 1 rupee (not "1 rupees")
+
 ## 1.0.15
 - Add Indian Rupee symbol (₹) expansion: handles crore and lakh suffixes (₹6 crore → 6 crore rupees)
 
