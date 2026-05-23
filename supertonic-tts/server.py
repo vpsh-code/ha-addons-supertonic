@@ -54,6 +54,7 @@ class SupertonicHandler(AsyncEventHandler):
         self._style_cache  = style_cache   # shared across connections
         # streaming state
         self._stream_voice: Optional[str] = None
+        self._stream_lang:  Optional[str] = None
         self._text_buf: list              = []
         self._audio_started: bool         = False
 
@@ -116,6 +117,10 @@ class SupertonicHandler(AsyncEventHandler):
             self._stream_voice = (
                 start.voice.name if (start.voice and start.voice.name) else self.default_voice
             )
+            lang = self.default_lang
+            if start.voice and start.voice.language:
+                lang = start.voice.language.split("-")[0].lower()
+            self._stream_lang  = lang if lang in AVAILABLE_LANGS else self.default_lang
             self._text_buf     = []
             self._audio_started = False
             # acknowledge
@@ -131,11 +136,10 @@ class SupertonicHandler(AsyncEventHandler):
         if SynthesizeStop.is_type(event.type):
             await self._stream_flush(force=True)
             if self._audio_started:
-                # In streaming mode HA reads until SynthesizeStopped, NOT AudioStop.
-                # Do NOT send AudioStop here — it is not expected and can stall the reader.
                 pass
             await self.write_event(SynthesizeStopped().event())
             self._stream_voice  = None
+            self._stream_lang   = None
             self._text_buf      = []
             self._audio_started = False
             return True
@@ -154,16 +158,17 @@ class SupertonicHandler(AsyncEventHandler):
         self._text_buf = []
 
         voice_name = self._stream_voice or self.default_voice
+        lang       = self._stream_lang  or self.default_lang
         style  = self._get_style(voice_name)
         loop   = asyncio.get_event_loop()
         sr     = self.tts.sample_rate
 
         normalized = normalize(text)
-        _LOGGER.info("Stream chunk | voice=%s | %r", voice_name, normalized[:60])
+        _LOGGER.info("Stream chunk | voice=%s lang=%s | %r", voice_name, lang, normalized[:60])
 
         wav = await loop.run_in_executor(
             None,
-            lambda: self.tts._infer(normalized, self.default_lang, style, self.total_step, self.speed)[0]
+            lambda: self.tts._infer(normalized, lang, style, self.total_step, self.speed)[0]
         )
 
         if not self._audio_started:

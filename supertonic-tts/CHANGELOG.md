@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.12
+- Fix streaming language handling — language from SynthesizeStart now used (was always defaulting to English)
+- Fix run.sh quality fallback (8→2) to match config.yaml default
+- Pin wyoming>=1.9.0 and onnxruntime>=1.17,<2.0 in requirements.txt
+
 ## 1.0.11
 - Fix Roman numeral expansion failing when LLM uses Unicode whitespace (non-breaking space, thin space) between name and numeral
 

@@ -5,7 +5,7 @@ set -e
 OPTIONS=/data/options.json
 VOICE=$(    jq -r '.voice    // "F1"'   "${OPTIONS}")
 LANGUAGE=$( jq -r '.language // "en"'   "${OPTIONS}")
-QUALITY=$(  jq -r '.quality  // 8'      "${OPTIONS}")
+QUALITY=$(  jq -r '.quality  // 2'      "${OPTIONS}")
 SPEED=$(    jq -r '.speed    // 1.05'   "${OPTIONS}")
 
 MODEL_DIR=/data/models/onnx
